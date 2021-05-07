@@ -110,14 +110,16 @@ func MakeRequest(w http.ResponseWriter, r *http.Request) {
 			panic(error)
 		}
 		defer response.Body.Close()
+		var temp player
+		json.NewDecoder(response.Body).Decode(&temp)
 
 		fmt.Println("response Status:", response.Status)
 		fmt.Println("response Headers:", response.Header)
 		body, _ := ioutil.ReadAll(response.Body)
-		fmt.Println("response Body:", string(body))
+		fmt.Println("response Body:", body)
 		//fmt.Printf("Got %s age %d club %s\n", tempPlayer.Name, tempPlayer.Age, val)
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(tempPlayer)
+		json.NewEncoder(w).Encode(temp)
 
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
