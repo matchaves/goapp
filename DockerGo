@@ -9,6 +9,6 @@ RUN go install -v ./...
 
 #ENV BAR=teste_successful_environment
 
-EXPOSE 80
+EXPOSE 32001
 
 CMD ["app"]
