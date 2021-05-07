@@ -96,13 +96,14 @@ func MakeRequest(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("UrlApp1:", os.Getenv("FOO"))
 		fmt.Println("UrlApp2:", os.Getenv("FOO"))
 		//fmt.Fprintf(w, os.Getenv("BAR"))
+		url := os.Getenv("FOO")
 		val := pathParams["app"]
 		var tempPlayer player
 		tempPlayer.Name = val
 		tempPlayer.Age = 32
 		tempPlayer.Club = "request do app1"
 		jsonData, _ := json.Marshal(tempPlayer)
-		request, _ := http.NewRequest("POST", "http://localhost:33001/post", bytes.NewBuffer(jsonData))
+		request, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 		request.Header.Set("Content-Type", "application/json; charset=UTF-8")
 		client := &http.Client{}
 		response, error := client.Do(request)
