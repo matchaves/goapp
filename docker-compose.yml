@@ -1,0 +1,12 @@
+version: '3'
+services:
+  films:
+    image: colabdevops/rental-films:0.2
+    container_name: films
+    ports:
+      - "8080:8080"
+    networks:
+      - prod-network
+networks:
+  prod-network:
+    driver: bridge
