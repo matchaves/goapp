@@ -78,12 +78,14 @@ func PrintEnv(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("FOO:", os.Getenv("FOO"))
 		//fmt.Fprintf(w, os.Getenv("BAR"))
 		var tempPlayer player
+		foo := os.Getenv("FOO")
 		tempPlayer.Name = "APP1"
 		tempPlayer.Age = 1
 		tempPlayer.Param = "Sucesso pelo metodo GET no /"
+		finalString := fmt.Sprintf(`{"param1": %v }`, foo)
 		fmt.Printf("Got %s age %d Param %s\n", tempPlayer.Name, tempPlayer.Age, tempPlayer.Param)
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode("GET on / APP1")
+		json.NewEncoder(w).Encode(finalString)
 
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -107,7 +109,10 @@ func MakeRequest(w http.ResponseWriter, r *http.Request) {
 		jsonData, _ := json.Marshal(tempPlayer)
 		fmt.Println("variavel recebida pelo pathParam:", val)
 		fmt.Println("executando uma request para a variavel do configmap: ", url)
-		request, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+		request, error := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+		if error != nil {
+			panic(error)
+		}
 		request.Header.Set("Content-Type", "application/json; charset=UTF-8")
 		client := &http.Client{}
 		response, error := client.Do(request)
