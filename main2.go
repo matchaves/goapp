@@ -9,15 +9,25 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-
+	"math/rand"
 	"github.com/gorilla/mux"
 )
 
-type player struct {
-	Name string
-	Age  uint8
-	Param string
-	
+type callApp struct {
+	Id  int64
+	Type string
+	Sourceapp string
+	Responseapp string
+}
+
+type requestAuth struct {
+	Id  int64
+	Requestapp string
+}
+
+type responseAuth struct {
+	Id int64
+	ResponseAuth string
 }
 
 func Urlparams(w http.ResponseWriter, r *http.Request) {
@@ -53,20 +63,24 @@ func Urlparams(w http.ResponseWriter, r *http.Request) {
 
 func Postparams(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-		var tempPlayer player
+		rnd := rand.New(rand.NewSource(99))
+		var req callApp
 		decoder := json.NewDecoder(r.Body)
-		err := decoder.Decode(&tempPlayer)
+		err := decoder.Decode(&req)
 
 		if err != nil {
 			panic(err)
 		}
 		defer r.Body.Close()
 
-		fmt.Printf("Este serviço foi chamado por: %s urlParamReq %d Param %s\n", tempPlayer.Name, tempPlayer.Age, tempPlayer.Param)
+		fmt.Printf("Este serviço foi chamado por: %s ID da chamada %d \n", req.Sourceapp, req.Id )
 		w.Header().Set("Content-Type", "application/json")
-		tempPlayer.Name = "APP2 RESPONDEU"
+		req.Id = rnd.Int63n(50)
+		req.Type = "Response"
+		//req.Sourceapp = req.Sourceapp
+		req.Responseapp = "APP2 RESPONDENDO OK"
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(tempPlayer)
+		json.NewEncoder(w).Encode(req)
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		w.Write([]byte("Method not allowed."))
@@ -75,13 +89,10 @@ func Postparams(w http.ResponseWriter, r *http.Request) {
 
 func PrintEnv(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		fmt.Println("FOO:", os.Getenv("FOO"))
+		fmt.Println("FOO:", os.Getenv("URLAPP1"))
 		//fmt.Fprintf(w, os.Getenv("BAR"))
-		var tempPlayer player
-		tempPlayer.Name = "APP2"
-		tempPlayer.Age = 2
-		tempPlayer.Param = "Sucesso pelo metodo GET no /"
-		fmt.Printf("Got %s age %d Param %s\n", tempPlayer.Name, tempPlayer.Age, tempPlayer.Param)
+
+		fmt.Printf("Request no / APP2 com sucesso api pronta para responder")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode("GET on / APP2")
 
@@ -95,28 +106,34 @@ func PrintEnv(w http.ResponseWriter, r *http.Request) {
 func MakeRequest(w http.ResponseWriter, r *http.Request) {
 	pathParams := mux.Vars(r)
 	if r.Method == "GET" {
-		fmt.Printf("UrlApp1: %s", os.Getenv("FOO"))
-		//fmt.Println("UrlApp2:", os.Getenv("FOO"))
+		fmt.Printf("URLAPP1: %s", os.Getenv("URLAPP1"))
+		//fmt.Println("URLAPP1:", os.Getenv("FOO"))
 		//fmt.Fprintf(w, os.Getenv("BAR"))
-		url := os.Getenv("FOO")
-		val := pathParams["app"]
-		var tempPlayer player
-		tempPlayer.Name = val
-		tempPlayer.Age = 1
-		tempPlayer.Param = "request do app1"
-		jsonData, _ := json.Marshal(tempPlayer)
-		fmt.Println("variavel recebida pelo pathParam: %s", val)
-		fmt.Println("executando uma request para a variavel do configmap: %s", os.Getenv("FOO"))
+		url := os.Getenv("URLAPP1")
+		var req callApp
+		id := pathParams["id"]
+		var err error
+		var nom int64
+		if nom, _ = strconv.ParseInt(id, 16, 64); err == nil {
+			fmt.Printf("%T, %v", nom, nom)
+		}
+
+		req.Id = nom
+		req.Type = "Request"
+		req.Sourceapp = "APP2"
+		jsonData, _ := json.Marshal(req)
+		fmt.Println("executando uma request para a variavel do configmap: %s", os.Getenv("URLAPP1"))
+		fmt.Println("executando uma request com ID: %v", pathParams["id"])
 		request, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
-		request.Header.Set("Content-Type", "application/json; charset=UTF-8")
+		request.Header.Set("Content-Type", "application/json")
 		client := &http.Client{}
 		response, error := client.Do(request)
 		if error != nil {
 			panic(error)
 		}
 		defer response.Body.Close()
-		var temp player
-		json.NewDecoder(response.Body).Decode(&temp)
+		var resp callApp
+		json.NewDecoder(response.Body).Decode(&resp)
 
 		fmt.Println("response Status:", response.Status)
 		fmt.Println("response Headers:", response.Header)
@@ -124,7 +141,7 @@ func MakeRequest(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("response Body:", body)
 		//fmt.Printf("Got %s age %d Param %s\n", tempPlayer.Name, tempPlayer.Age, val)
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(temp)
+		json.NewEncoder(w).Encode(resp)
 
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -133,7 +150,37 @@ func MakeRequest(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func AuthReq(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		rnd := rand.New(rand.NewSource(99))
+		url := os.Getenv("AUTH")
+		var reqAuth requestAuth
+		reqAuth.Id = rnd.Int63n(50)
+		reqAuth.Requestapp = "APP2"
+		jsonData, _ := json.Marshal(reqAuth)
+		request, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+		request.Header.Set("Content-Type", "application/json")
+		client := &http.Client{}
+		fmt.Println("Executando Request de autenticacao")
+		response, error := client.Do(request)
+		if error != nil {
+			panic(error)
+		}
+		defer response.Body.Close()
+		var respAuth responseAuth
+		json.NewDecoder(response.Body).Decode(&respAuth)
+
+		fmt.Printf("response Status Auth %d:", respAuth.ResponseAuth)
+		json.NewEncoder(w).Encode(respAuth)
+
+	} else {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Write([]byte("Method not allowed."))
+	}
+}
+
 func main() {
+	fmt.Printf("Iniciando aplicacao APP2 na porta 8082")
 	r := mux.NewRouter()
 	//r.HandleFunc("/")
 	//api := r.PathPrefix("/").Subrouter()
@@ -148,7 +195,9 @@ func main() {
 
 	r.HandleFunc("/param1/{param1}/param2/{param2}", Urlparams)
 
-	r.HandleFunc("/to/{app}", MakeRequest)
+	r.HandleFunc("/make/{id}", MakeRequest)
+
+	r.HandleFunc("/auth", AuthReq)
 
 	//http.ListenAndServe(":80", nil)
 	log.Fatal(http.ListenAndServe(":8082", r))
