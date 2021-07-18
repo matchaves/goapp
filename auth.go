@@ -7,22 +7,23 @@ import (
 	"net/http"
 	"math/rand"
 	"github.com/gorilla/mux"
+	"time"
 )
 
 type requestAuth struct {
-	Id  int64
+	Id  int
 	Requestapp string
 }
 
 type responseAuth struct {
-	Id int64
+	Id int
 	ResponseAuth string
 }
 
 func AuthRoute(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		fmt.Println("Auth solicitado por Aplicacao")
-		rnd := rand.New(rand.NewSource(99))
+		rand.Seed(time.Now().UnixNano())
 		var req requestAuth
 		var resp responseAuth
 		decoder := json.NewDecoder(r.Body)
@@ -35,7 +36,7 @@ func AuthRoute(w http.ResponseWriter, r *http.Request) {
 
 		fmt.Printf("Auth solicitado por Aplicacao: %s | ID da Req %d \n", req.Requestapp, req.Id )
 		w.Header().Set("Content-Type", "application/json")
-		resp.Id = rnd.Int63n(50)
+		resp.Id = rand.Intn(50)
 		resp.ResponseAuth = "Auth OK"
 		//req.Sourceapp = req.Sourceapp
 		w.WriteHeader(http.StatusOK)
@@ -47,7 +48,7 @@ func AuthRoute(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	fmt.Printf("Iniciando aplicacao de Autenticação na porta 8083")
+	fmt.Printf("Iniciando aplicacao de Autenticação")
 	r := mux.NewRouter()
 	//r.HandleFunc("/")
 	//api := r.PathPrefix("/").Subrouter()
@@ -59,5 +60,5 @@ func main() {
 	r.HandleFunc("/auth", AuthRoute)
 
 	//http.ListenAndServe(":80", nil)
-	log.Fatal(http.ListenAndServe(":8083", r))
+	log.Fatal(http.ListenAndServe(":80", r))
 }

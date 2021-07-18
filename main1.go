@@ -11,22 +11,23 @@ import (
 	"strconv"
 	"math/rand"
 	"github.com/gorilla/mux"
+	"time"
 )
 
 type callApp struct {
-	Id  int64
+	Id  int
 	Type string
 	Sourceapp string
 	Responseapp string
 }
 
 type requestAuth struct {
-	Id  int64
+	Id  int
 	Requestapp string
 }
 
 type responseAuth struct {
-	Id int64
+	Id int
 	ResponseAuth string
 }
 
@@ -63,7 +64,7 @@ func Urlparams(w http.ResponseWriter, r *http.Request) {
 
 func Postparams(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-		rnd := rand.New(rand.NewSource(99))
+		rand.Seed(time.Now().UnixNano())
 		var req callApp
 		decoder := json.NewDecoder(r.Body)
 		err := decoder.Decode(&req)
@@ -75,7 +76,7 @@ func Postparams(w http.ResponseWriter, r *http.Request) {
 
 		fmt.Printf("Este serviço foi chamado por: %s ID da chamada %d \n", req.Sourceapp, req.Id )
 		w.Header().Set("Content-Type", "application/json")
-		req.Id = rnd.Int63n(50)
+		req.Id = rand.Intn(50)
 		req.Type = "Response"
 		//req.Sourceapp = req.Sourceapp
 		req.Responseapp = "APP1 RESPONDENDO OK"
@@ -112,13 +113,13 @@ func MakeRequest(w http.ResponseWriter, r *http.Request) {
 		url := os.Getenv("URLAPP2")
 		var req callApp
 		id := pathParams["id"]
-		var err error
-		var nom int64
-		if nom, _ = strconv.ParseInt(id, 16, 64); err == nil {
-			fmt.Printf("%T, %v", nom, nom)
-		}
+		//var nom int
+		intVar, _ := strconv.Atoi(id)
+		//if nom, _ = strconv.ParseInt(id, 16, 64); err == nil {
+		//	fmt.Printf("%T, %v", nom, nom)
+		//}
 
-		req.Id = nom
+		req.Id = intVar
 		req.Type = "Request"
 		req.Sourceapp = "APP1"
 		jsonData, _ := json.Marshal(req)
@@ -152,10 +153,10 @@ func MakeRequest(w http.ResponseWriter, r *http.Request) {
 
 func AuthReq(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		rnd := rand.New(rand.NewSource(99))
+		rand.Seed(time.Now().UnixNano())
 		url := os.Getenv("AUTH")
 		var reqAuth requestAuth
-		reqAuth.Id = rnd.Int63n(50)
+		reqAuth.Id = rand.Intn(50)
 		reqAuth.Requestapp = "APP1"
 		jsonData, _ := json.Marshal(reqAuth)
 		request, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
@@ -180,7 +181,7 @@ func AuthReq(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	fmt.Printf("Iniciando aplicacao APP1 na porta 8081")
+	fmt.Printf("Iniciando aplicacao APP1")
 	r := mux.NewRouter()
 	//r.HandleFunc("/")
 	//api := r.PathPrefix("/").Subrouter()
@@ -200,5 +201,5 @@ func main() {
 	r.HandleFunc("/auth", AuthReq)
 
 	//http.ListenAndServe(":80", nil)
-	log.Fatal(http.ListenAndServe(":8081", r))
+	log.Fatal(http.ListenAndServe(":80", r))
 }
